@@ -1,0 +1,26 @@
+{
+  "name": "herdr-pi-live",
+  "version": "0.1.0",
+  "description": "Keep Herdr's pane status shown as working while pi background subagents or workflows are still running.",
+  "keywords": [
+    "pi-package",
+    "herdr",
+    "pi",
+    "subagents"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yukinight/herdr-pi-live.git"
+  },
+  "files": [
+    "herdr-live.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "pi": {
+    "extensions": [
+      "./herdr-live.ts"
+    ]
+  }
+}
