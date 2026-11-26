@@ -4,6 +4,8 @@ A small [pi](https://pi.dev) extension that keeps [Herdr](https://herdr.dev)'s p
 status at `working` while pi's **background subagents** (or workflows) are still
 running, instead of flipping to `idle` as soon as the spawning turn settles.
 
+[Pi package gallery](https://pi.dev/packages/herdr-pi-live)
+
 ## The problem
 
 Herdr recognizes pi through its own integration (`herdr-agent-state.ts`, Herdr
@@ -40,7 +42,7 @@ Requirements:
 - a pi TUI session inside a Herdr pane (`HERDR_ENV=1`); headless pi sessions
   never report, and neither does this extension.
 
-From npm, once published:
+From npm:
 
 ```bash
 pi install npm:herdr-pi-live
@@ -120,7 +122,7 @@ a no-op outside Herdr.
 ## Uninstall
 
 ```bash
-pi remove git:github.com/yukinight/herdr-pi-live   # or npm:herdr-pi-live
+pi remove npm:herdr-pi-live   # or git:github.com/yukinight/herdr-pi-live
 ```
 
 or delete `herdr-live.ts` from the extension directory and restart pi.
