@@ -22,16 +22,15 @@ agents keep working. Herdr's own agent guide documents the same limitation for
 other agents: *"can be idle while background tasks or subagents keep running,
 so a settled-state wait is not proof those jobs have finished"*.
 
-Consequences: a misleading sidebar/badge, `herdr agent wait --state idle`
+Consequences: a misleading sidebar/badge, `herdr agent wait <pane-id> --until idle`
 returning early, completion notifications firing too soon, and a pane that looks
 free while it is not.
 
 ## What it does
 
-It subscribes to the lifecycle events pi-subagents publishes on `pi.events` and
-re-reports `working` for as long as any background agent or workflow is live,
-then reports `idle` again once the last one finishes and the root session is
-idle.
+It reports `working` while the root session, a background subagent, or a workflow
+is active. When `herdr:blocked` signals an approval is pending, it reports
+`blocked` with the approval label. It reports `idle` after all work settles.
 
 ## Install
 
@@ -73,20 +72,11 @@ replace Herdr's own `herdr-agent-state.ts` — that one is rewritten by
   workflows (`subagents:workflow_started` / `workflow_settled`).
 - `subagents:created` is deliberately ignored: it is re-announced for resumed or
   already finished agents, so counting it would leave ids that never complete.
-- While a set is non-empty, the extension publishes `pane.report_agent` with
-  `state: "working"` 300 ms after the root session settles. Herdr applies
-  reports for the same `(pane, source)` by `seq`, and this extension keeps its
-  `seq` above the official integration's, so the correction wins over the
-  `idle` the official integration just sent.
-- When the last agent finishes, it waits 1 s and then reports the state the root
-  session is actually in, so an idle pane really is idle.
-- It yields entirely while `herdr:blocked` is active — the official integration
-  owns the "waiting for approval" state.
-- Herdr's `state_change_seq` only moves on real state changes, so repeated
-  `working` reports are no-ops; only `idle → working` transitions show up.
-
-Ordered by `seq`, the sequence for one settle becomes: official `working` →
-official `idle` → this extension `working` — a sub-second flash in Herdr.
+- Session and state reports use the same increasing sequence for `herdr:pi`.
+  Once the extension reports, its sequence supersedes the built-in integration
+  and it continues reporting every state transition.
+- On session start, it sends the path or ID to Herdr before reporting state so
+  Herdr can associate updates with the right session after `/new` or `/resume`.
 
 ## Verify
 
@@ -100,22 +90,14 @@ herdr agent wait <pane-id> --until idle
 
 Watch the pane while a background subagent is running: `agent_status` stays
 `working`; after the last agent finishes, it returns to `idle`. The extension is
-a no-op outside Herdr.
+a no-op outside Herdr. Run `npm test` for the lifecycle regression tests.
 
 ## Limitations
 
-- The official integration still reports `idle` first; this extension corrects
-  it ~300 ms later. The flash is sub-second but visible to a completion sound if
-  you have Herdr sounds enabled.
 - Agents that started before this extension was loaded are unknown, so their
   completion events are ignored. Reload while no background agent is running.
-- Agents held in pi-subagents' queue (`maxConcurrent`) are not counted until
-  they start; if the pool drains completely while a queued agent is still
-  starting, the pane can show a sub-second `idle`.
-- Two external contracts: Herdr's `pane.report_agent` seq ordering (Herdr 0.9.x)
-  and pi-subagents' `subagents:*` events. If either changes these reports stop
-  landing and the pane degrades silently to its original behavior — nothing
-  breaks, the status just goes back to being wrong.
+- Agents held in pi-subagents' queue (`maxConcurrent`) count once they start.
+  The pane can briefly show `idle` between queued agents.
 - Fixing this properly belongs in Herdr's own pi integration; this extension is
   a stop-gap that survives `herdr update`.
 
